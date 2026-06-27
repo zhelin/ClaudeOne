@@ -11,7 +11,8 @@
     "preview": "electron-vite preview",
     "start": "electron-vite preview",
     "postinstall": "electron-builder install-app-deps",
-    "package": "electron-vite build && electron-builder --win"
+    "package": "electron-vite build && electron-builder --win",
+    "package:mac": "electron-vite build && electron-builder --mac"
   },
   "build": {
     "appId": "com.claudeone.app",
@@ -47,7 +48,20 @@
     },
     "mac": {
       "target": [
-        "zip"
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
       ],
       "category": "public.app-category.developer-tools",
       "artifactName": "ClaudeOne-${version}-mac-${arch}.${ext}"
