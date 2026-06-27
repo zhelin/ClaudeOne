@@ -1,0 +1,33 @@
+# ===== 依赖与构建产物（体积大，绝不入库）=====
+node_modules/
+out/
+dist/
+release/
+release2/
+win-unpacked/
+*.asar
+
+# ===== 随包携带的安装器（体积大，打包前本地/CI 放置）=====
+build/node-installer.msi
+build/git-installer.exe
+**/build/node-installer.msi
+**/build/git-installer.exe
+
+# ===== 日志 / 系统文件 =====
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# ===== 编辑器 =====
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# ===== 环境变量 / 密钥 =====
+.env
+.env.local
+*.local
+
+# ===== 文档目录（不上传）=====
+doc/

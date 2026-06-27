@@ -1,0 +1,8 @@
+node_modules/
+out/
+dist/
+*.log
+.DS_Store
+
+# 随包携带的 Node 安装文件（体积大，本地/CI 打包前放置，勿入库）
+build/node-installer.msi
