@@ -19,8 +19,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Windows x64
-          - os: windows-latest
+          # Windows x64（固定 windows-2022：node-gyp 9.x 能识别其 VS 2022，
+          # 且编译 node-pty 不挂起；windows-2025/latest 上两者会冲突）
+          - os: windows-2022
             label: win
             isWin: true
             buildArgs: '--win'
@@ -46,6 +47,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+
+      # node-gyp 9.x 需要 Python（含 setuptools/distutils）；
+      # 新版 runner 默认 Python 3.12 已移除 distutils，固定 3.11 避免编译报错。
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
       - name: Install dependencies
         run: npm install
