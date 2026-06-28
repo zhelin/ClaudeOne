@@ -24,16 +24,13 @@ jobs:
             label: win
             isWin: true
             buildArgs: '--win'
-          # macOS Apple Silicon（arm64，原生编译）
+          # macOS：在一台 Apple Silicon runner 上同时打 arm64 + x64。
+          # 移除 node-pty 后无原生模块编译，electron-builder 只是下载对应架构的
+          # 预编译 Electron 打包，不存在交叉编译问题，也省去稀缺的 Intel runner 排队。
           - os: macos-latest
-            label: mac-arm64
+            label: mac
             isWin: false
-            buildArgs: '--mac --arm64'
-          # macOS Intel（x64，原生编译，避免交叉编译 node-pty）
-          - os: macos-13
-            label: mac-x64
-            isWin: false
-            buildArgs: '--mac --x64'
+            buildArgs: '--mac --arm64 --x64'
     runs-on: ${{ matrix.os }}
     defaults:
       run:
