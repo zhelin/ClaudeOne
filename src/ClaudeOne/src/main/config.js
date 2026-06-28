@@ -24,8 +24,7 @@ function defaultConfig() {
     activeProviderId: null,
     settings: {
       theme: 'dark', // dark | light
-      language: 'zh', // zh | en
-      terminalMode: 'embedded' // embedded | system
+      language: 'zh' // zh | en
     },
     recentProjects: [] // [{ path, name, lastOpened }]
   }

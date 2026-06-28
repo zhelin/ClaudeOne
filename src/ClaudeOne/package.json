@@ -23,9 +23,6 @@
     "files": [
       "out/**/*"
     ],
-    "asarUnpack": [
-      "**/node_modules/node-pty/**"
-    ],
     "extraResources": [
       {
         "from": "build/",
@@ -69,10 +66,7 @@
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
-    "@electron-toolkit/utils": "^3.0.0",
-    "@xterm/addon-fit": "^0.10.0",
-    "@xterm/xterm": "^5.5.0",
-    "node-pty": "^1.0.0"
+    "@electron-toolkit/utils": "^3.0.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",

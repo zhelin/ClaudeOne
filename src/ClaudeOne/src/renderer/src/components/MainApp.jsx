@@ -36,14 +36,13 @@ export default function MainApp({ config, refreshConfig, applyTheme }) {
     await reloadActiveProvider()
   }, [refreshConfig, reloadActiveProvider])
 
-  // 「在终端运行」：切到终端页并请求自动启动 claude
-  const [terminalAutoRun, setTerminalAutoRun] = useState(0)
+  // 「在终端运行」：切到终端页并用系统终端启动 claude
   const [terminalCwd, setTerminalCwd] = useState('')
   const runInTerminal = useCallback((cwd) => {
     setTerminalCwd(cwd || '')
-    setTerminalAutoRun((n) => n + 1)
     setActive('terminal')
-  }, [])
+    window.api.launchClaude({ ...(activeProvider || {}), cwd: cwd || undefined })
+  }, [activeProvider])
 
   return (
     <div className="shell">
@@ -87,19 +86,12 @@ export default function MainApp({ config, refreshConfig, applyTheme }) {
         {active === 'providers' && (
           <Providers onConfigChanged={onConfigChanged} />
         )}
-        {/* 终端常驻挂载，切换标签页时隐藏而非卸载，保留会话 */}
-        <div
-          className="term-mount"
-          style={{ display: active === 'terminal' ? 'flex' : 'none' }}
-        >
+        {active === 'terminal' && (
           <TerminalPanel
             activeProvider={activeProvider}
-            config={config}
-            autoRunSignal={terminalAutoRun}
             initialCwd={terminalCwd}
-            visible={active === 'terminal'}
           />
-        </div>
+        )}
         {active === 'projects' && (
           <ProjectsPanel
             config={config}

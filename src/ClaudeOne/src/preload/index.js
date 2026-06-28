@@ -32,22 +32,6 @@ const api = {
   // 系统终端启动
   launchClaude: (opts) => ipcRenderer.invoke('claude:launch', opts),
 
-  // 内嵌终端（node-pty）
-  termCreate: (opts) => ipcRenderer.invoke('terminal:create', opts),
-  termWrite: (id, data) => ipcRenderer.invoke('terminal:write', { id, data }),
-  termResize: (id, cols, rows) => ipcRenderer.invoke('terminal:resize', { id, cols, rows }),
-  termDestroy: (id) => ipcRenderer.invoke('terminal:destroy', { id }),
-  onTermData: (cb) => {
-    const listener = (_e, payload) => cb(payload)
-    ipcRenderer.on('terminal:data', listener)
-    return () => ipcRenderer.removeListener('terminal:data', listener)
-  },
-  onTermExit: (cb) => {
-    const listener = (_e, payload) => cb(payload)
-    ipcRenderer.on('terminal:exit', listener)
-    return () => ipcRenderer.removeListener('terminal:exit', listener)
-  },
-
   // MCP
   listMcp: () => ipcRenderer.invoke('mcp:list'),
   upsertMcp: (s) => ipcRenderer.invoke('mcp:upsert', s),

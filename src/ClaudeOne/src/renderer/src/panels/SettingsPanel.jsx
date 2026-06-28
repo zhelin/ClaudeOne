@@ -1,10 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react'
 
-// ⚙️ 设置：主题、默认终端方式、重新自检环境。
+// ⚙️ 设置：主题、重新自检环境。
 export default function SettingsPanel({ config, applyTheme, onConfigChanged }) {
   const settings = config?.settings || {}
   const [theme, setTheme] = useState(settings.theme || 'dark')
-  const [terminalMode, setTerminalMode] = useState(settings.terminalMode || 'embedded')
   const [checking, setChecking] = useState(false)
   const [log, setLog] = useState('')
   const logRef = useRef(null)
@@ -23,12 +22,6 @@ export default function SettingsPanel({ config, applyTheme, onConfigChanged }) {
     setTheme(t)
     applyTheme(t)
     await window.api.saveConfig({ settings: { theme: t } })
-    await onConfigChanged()
-  }
-
-  const changeTerminalMode = async (m) => {
-    setTerminalMode(m)
-    await window.api.saveConfig({ settings: { terminalMode: m } })
     await onConfigChanged()
   }
 
@@ -57,27 +50,6 @@ export default function SettingsPanel({ config, applyTheme, onConfigChanged }) {
             </button>
             <button className={`seg-btn ${theme === 'light' ? 'active' : ''}`} onClick={() => changeTheme('light')}>
               亮色
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="card-title">终端</div>
-        <div className="setting-row">
-          <span className="setting-label">默认启动方式</span>
-          <div className="seg">
-            <button
-              className={`seg-btn ${terminalMode === 'embedded' ? 'active' : ''}`}
-              onClick={() => changeTerminalMode('embedded')}
-            >
-              内嵌终端
-            </button>
-            <button
-              className={`seg-btn ${terminalMode === 'system' ? 'active' : ''}`}
-              onClick={() => changeTerminalMode('system')}
-            >
-              系统终端
             </button>
           </div>
         </div>

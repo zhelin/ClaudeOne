@@ -22,7 +22,6 @@ import {
 import { installNode } from './node-installer'
 import { installGit } from './git-installer'
 import { launchClaudeCode } from './launcher'
-import { createSession, writeSession, resizeSession, destroySession, destroyAllSessions } from './pty'
 import { listMcpServers, upsertMcpServer, deleteMcpServer } from './mcp'
 import { listClaudeProjects } from './projects'
 import { listInstalledSkills, marketplaceSkills } from './skills'
@@ -104,18 +103,6 @@ function registerIpc(getWindow) {
     }
     return launchClaudeCode(opts || {})
   })
-
-  // —— 内嵌终端（node-pty）——
-  ipcMain.handle('terminal:create', (_e, opts) => {
-    return createSession(
-      opts,
-      (data) => send('terminal:data', { id: opts.id, data }),
-      (code) => send('terminal:exit', { id: opts.id, code })
-    )
-  })
-  ipcMain.handle('terminal:write', (_e, { id, data }) => writeSession(id, data))
-  ipcMain.handle('terminal:resize', (_e, { id, cols, rows }) => resizeSession(id, cols, rows))
-  ipcMain.handle('terminal:destroy', (_e, { id }) => destroySession(id))
 
   // —— MCP 管理 ——
   ipcMain.handle('mcp:list', () => listMcpServers())
@@ -215,10 +202,6 @@ if (!gotSingleInstanceLock) {
     })
   })
 }
-
-app.on('before-quit', () => {
-  destroyAllSessions()
-})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
