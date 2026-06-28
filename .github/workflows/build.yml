@@ -14,15 +14,26 @@ permissions:
 
 jobs:
   build:
-    name: Build (${{ matrix.platform }})
+    name: Build (${{ matrix.label }})
     strategy:
       fail-fast: false
       matrix:
         include:
+          # Windows x64
           - os: windows-latest
-            platform: win
+            label: win
+            isWin: true
+            buildArgs: '--win'
+          # macOS Apple Silicon（arm64，原生编译）
           - os: macos-latest
-            platform: mac
+            label: mac-arm64
+            isWin: false
+            buildArgs: '--mac --arm64'
+          # macOS Intel（x64，原生编译，避免交叉编译 node-pty）
+          - os: macos-13
+            label: mac-x64
+            isWin: false
+            buildArgs: '--mac --x64'
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -43,7 +54,7 @@ jobs:
       # 这两个文件体积大、未入库，CI 上从官网下载后放进 build/，
       # 让打出的 Windows 包内置「一键安装 Node/Git」功能。
       - name: Download bundled installers (Windows)
-        if: matrix.platform == 'win'
+        if: matrix.isWin
         shell: pwsh
         run: |
           $nodeUrl = "https://nodejs.org/dist/v20.19.5/node-v20.19.5-x64.msi"
@@ -54,18 +65,13 @@ jobs:
       - name: Build app (electron-vite)
         run: npm run build
 
-      - name: Package Windows
-        if: matrix.platform == 'win'
-        run: npx electron-builder --win --publish never
-
-      - name: Package macOS
-        if: matrix.platform == 'mac'
-        run: npx electron-builder --mac --publish never
+      - name: Package
+        run: npx electron-builder ${{ matrix.buildArgs }} --publish never
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ClaudeOne-${{ matrix.platform }}
+          name: ClaudeOne-${{ matrix.label }}
           retention-days: 7
           path: |
             src/ClaudeOne/dist/*.exe
