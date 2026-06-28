@@ -1,6 +1,6 @@
 {
   "name": "claudeone",
-  "version": "0.1.4",
+  "version": "0.1.6",
   "description": "一键安装 / 一键启动 Claude Code，对接国产兼容大模型的 GUI 工具",
   "main": "out/main/index.js",
   "author": "",

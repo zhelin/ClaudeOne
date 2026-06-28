@@ -23,14 +23,37 @@ async function tryVersion(cmd) {
   }
 }
 
+// 在 PATH 里找不到 claude 时，回退到 npm 全局安装目录直接探测其 shim。
+// 场景：刚装完 Node/Claude Code 的全新系统，npm 全局 bin 目录（Windows: %AppData%\npm）
+// 尚未进入当前 Electron 进程启动时捕获的 PATH，导致 `claude --version` 找不到命令。
+async function tryClaudeViaGlobalPrefix() {
+  try {
+    const { stdout } = await execAsync(`${isWin ? 'npm.cmd' : 'npm'} prefix -g`, {
+      windowsHide: true,
+      shell: isWin,
+      timeout: 15000
+    })
+    const prefix = stdout.trim()
+    // Windows：<prefix>\claude.cmd；类 Unix：<prefix>/bin/claude
+    const claudeBin = isWin ? join(prefix, 'claude.cmd') : join(prefix, 'bin', 'claude')
+    if (!existsSync(claudeBin)) return null
+    return await tryVersion(`"${claudeBin}" --version`)
+  } catch {
+    return null
+  }
+}
+
 // 检测 Node / npm / Git / Claude Code 安装状态
 export async function detectEnvironment() {
-  const [node, npm, git, claude] = await Promise.all([
+  const [node, npm, git, claudeOnPath] = await Promise.all([
     tryVersion('node --version'),
     tryVersion('npm --version'),
     tryVersion('git --version'),
     tryVersion('claude --version')
   ])
+
+  // PATH 没找到时回退到 npm 全局目录探测，避免「装好了但判定未就绪」
+  const claude = claudeOnPath || (await tryClaudeViaGlobalPrefix())
 
   return {
     node: { installed: !!node, version: node },
@@ -70,21 +93,71 @@ export function skipClaudeFirstRun() {
   }
 }
 
+// 手动补跑 Claude Code 的 postinstall（install.cjs）。
+// 新版 npm（11.6+，随 Node 24 一起发布）默认启用 "allow-scripts" 安全特性，
+// 会拦截依赖包的 postinstall 生命周期脚本（日志里出现 `npm warn allow-scripts`）。
+// 而 @anthropic-ai/claude-code 正是靠 postinstall 的 `node install.cjs` 下载/链接真正的
+// 原生 CLI 可执行文件；被拦截后包文件虽在、但 `claude --version` 不可用 → 环境判定未就绪。
+// 这里在 npm 安装完成后，定位全局包目录并主动跑一次 install.cjs，绕过该拦截。
+async function runClaudePostinstall(onData) {
+  try {
+    const { stdout } = await execAsync(`${isWin ? 'npm.cmd' : 'npm'} root -g`, {
+      windowsHide: true,
+      shell: isWin,
+      timeout: 15000
+    })
+    const globalRoot = stdout.trim()
+    const pkgDir = join(globalRoot, '@anthropic-ai', 'claude-code')
+    const installScript = join(pkgDir, 'install.cjs')
+    if (!existsSync(installScript)) {
+      // 旧版本可能没有该脚本（postinstall 非必需），直接跳过
+      return
+    }
+    onData('\n正在完成 Claude Code 原生组件安装（补跑 postinstall）…\n')
+    await new Promise((res) => {
+      const c = spawn(isWin ? 'node.exe' : 'node', [installScript], {
+        cwd: pkgDir,
+        windowsHide: true,
+        shell: isWin
+      })
+      c.stdout.on('data', (d) => onData(d.toString()))
+      c.stderr.on('data', (d) => onData(d.toString()))
+      c.on('close', () => res())
+      c.on('error', (err) => {
+        onData(`（提示）补跑 postinstall 失败：${err.message}\n`)
+        res()
+      })
+    })
+  } catch (err) {
+    onData(`（提示）定位 Claude Code 全局目录失败：${err.message}\n`)
+  }
+}
+
 // 一键安装 Claude Code，流式回传安装日志；装完自动设置"跳过初次确认"
 export function installClaudeCode(onData) {
   return new Promise((resolve) => {
     const child = spawn(
       isWin ? 'npm.cmd' : 'npm',
-      ['install', '-g', '@anthropic-ai/claude-code', `--registry=${NPM_REGISTRY}`],
+      // --foreground-scripts：让 postinstall 在前台执行并回显日志；
+      // 部分新版 npm 仍会因 allow-scripts 拦截，故下方再主动补跑一次 install.cjs 兜底。
+      [
+        'install',
+        '-g',
+        '@anthropic-ai/claude-code',
+        `--registry=${NPM_REGISTRY}`,
+        '--foreground-scripts'
+      ],
       { windowsHide: true, shell: isWin }
     )
 
     child.stdout.on('data', (d) => onData(d.toString()))
     child.stderr.on('data', (d) => onData(d.toString()))
 
-    child.on('close', (code) => {
+    child.on('close', async (code) => {
       const success = code === 0
       if (success) {
+        // 关键修复：补跑被 npm allow-scripts 拦截的 postinstall，确保原生 CLI 可用
+        await runClaudePostinstall(onData)
         const r = skipClaudeFirstRun()
         onData(
           r.success
